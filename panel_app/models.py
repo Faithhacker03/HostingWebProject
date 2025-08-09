@@ -1,5 +1,5 @@
 import enum
-# Import from our new extensions file
+# CORRECT: Import from our new extensions.py file
 from .extensions import db, login_manager
 from flask_login import UserMixin
 
