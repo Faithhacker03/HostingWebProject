@@ -1,14 +1,14 @@
 import os
-from flask import render_template, url_for, flash, redirect, request, abort
+from flask import render_template, url_for, flash, redirect, request, abort, Blueprint
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.utils import secure_filename
-from panel_app import create_app, db, bcrypt
+from panel_app import db, bcrypt
 from panel_app.models import User, Bot, BotStatus
 from panel_app.forms import RegistrationForm, LoginForm
 from config import Config
 
-# Use the 'main' Blueprint from __init__.py
-from . import main
+# The blueprint is DEFINED here, not imported.
+main = Blueprint('main', __name__)
 
 @main.route("/")
 @main.route("/home")
@@ -83,7 +83,6 @@ def dashboard():
         elif action == 'upload_db' and 'db_file' in request.files:
             file = request.files['db_file']
             if file and file.filename.endswith('.db'):
-                # We save it with a consistent name for simplicity
                 file.save(os.path.join(user_folder, 'user.db'))
                 flash('Database file uploaded successfully!', 'success')
             else:
@@ -134,6 +133,5 @@ def admin_panel():
     if not current_user.is_admin:
         abort(403) # Forbidden
     
-    # Join User and Bot tables to get all info in one query
     users_with_bots = db.session.query(User, Bot).join(Bot, User.id == Bot.user_id).all()
     return render_template('admin.html', title='Admin Panel', users_with_bots=users_with_bots)
