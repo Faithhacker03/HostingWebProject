@@ -1,10 +1,10 @@
 import os
-import click
+import click # <-- Make sure 'click' is in your requirements.txt too!
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
-from config import Config
+from config import Config # <-- Ensure config.py exists and is error-free
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -12,6 +12,7 @@ login_manager = LoginManager()
 login_manager.login_view = 'main.login'
 login_manager.login_message_category = 'info'
 
+# THIS IS THE FUNCTION GUNICORN IS LOOKING FOR
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -26,7 +27,7 @@ def create_app(config_class=Config):
     bcrypt.init_app(app)
     login_manager.init_app(app)
 
-    from panel_app.routes import main
+    from panel_app.routes import main # <-- Ensure panel_app/routes.py exists and is error-free
     app.register_blueprint(main)
 
     # Command to create the first admin user
@@ -39,7 +40,7 @@ def create_app(config_class=Config):
             print("Error: ADMIN_EMAIL and ADMIN_PASSWORD must be set in your environment.")
             return
         
-        from panel_app.models import User
+        from panel_app.models import User # <-- Ensure panel_app/models.py exists and is error-free
         if User.query.filter_by(email=admin_email).first():
             print(f"Admin user with email {admin_email} already exists.")
             return
@@ -51,6 +52,6 @@ def create_app(config_class=Config):
         print(f"Admin user {admin_email} created successfully.")
 
     with app.app_context():
-        db.create_all()
+        db.create_all() # Create database tables if they don't exist
 
-    return app
+    return app # <-- Make sure this line is here and correctly indented
