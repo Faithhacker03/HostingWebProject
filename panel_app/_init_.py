@@ -1,24 +1,17 @@
 import os
 import click
-from flask import Flask, Blueprint
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from config import Config
 
-# Create instances of the extensions
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
-
-# This tells Flask-Login where to redirect users if they try to access a page that requires login
-login_manager.login_view = 'main.login' 
+login_manager.login_view = 'main.login'
 login_manager.login_message_category = 'info'
 
-# This defines a Blueprint for our routes
-main = Blueprint('main', __name__)
-
-# This is the Application Factory function that Gunicorn is looking for
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -29,13 +22,11 @@ def create_app(config_class=Config):
     os.makedirs(instance_path, exist_ok=True)
     os.makedirs(user_data_path, exist_ok=True)
 
-    # Initialize the extensions with the app
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
 
-    # Import and register the blueprint AFTER initializing extensions to avoid circular imports
-    from . import routes  # The dot means import from the current package
+    from panel_app.routes import main
     app.register_blueprint(main)
 
     # Command to create the first admin user
@@ -60,6 +51,6 @@ def create_app(config_class=Config):
         print(f"Admin user {admin_email} created successfully.")
 
     with app.app_context():
-        db.create_all() # Create database tables if they don't exist
+        db.create_all()
 
     return app
