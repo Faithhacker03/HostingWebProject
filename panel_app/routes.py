@@ -1,15 +1,18 @@
 import os
-from flask import render_template, url_for, flash, redirect, request, abort, Blueprint # <-- Added Blueprint here
+from flask import render_template, url_for, flash, redirect, request, abort, Blueprint
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.utils import secure_filename
-# We only need db and bcrypt from our app package
-from panel_app import db, bcrypt 
-from panel_app.models import User, Bot, BotStatus
-from panel_app.forms import RegistrationForm, LoginForm
+# Import from our new extensions file
+from .extensions import db, bcrypt 
+from .models import User, Bot, BotStatus
+from .forms import RegistrationForm, LoginForm
 from config import Config
 
-# DEFINE the blueprint here. Do not import it.
 main = Blueprint('main', __name__)
+
+# --- ALL YOUR ROUTE FUNCTIONS GO HERE ---
+# (The content of your routes does not need to change, just the imports at the top)
+# (Copy all the @main.route functions from your existing file and paste them below this line)
 
 @main.route("/")
 @main.route("/home")
@@ -27,7 +30,6 @@ def register():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         user = User(email=form.email.data, password=hashed_password)
         db.session.add(user)
-        # Every new user gets a Bot entry associated with them
         bot = Bot(owner=user, status=BotStatus.STOPPED)
         db.session.add(bot)
         db.session.commit()
@@ -35,6 +37,8 @@ def register():
         return redirect(url_for('main.login'))
     return render_template('register.html', title='Register', form=form)
 
+# ... PASTE THE REST OF YOUR ROUTES: login, logout, dashboard, start_bot, stop_bot, admin_panel ...
+# The code you provided for routes.py in the previous message was correct from the function definitions downward.
 @main.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -62,9 +66,7 @@ def dashboard():
     os.makedirs(user_folder, exist_ok=True)
 
     if request.method == 'POST':
-        # Check which form was submitted
         action = request.form.get('action')
-        
         if action == 'upload_bot' and 'bot_file' in request.files:
             file = request.files['bot_file']
             if file and file.filename.endswith('.py'):
@@ -72,7 +74,6 @@ def dashboard():
                 flash('bot.py uploaded successfully!', 'success')
             else:
                 flash('Invalid file. Please upload a .py file.', 'danger')
-
         elif action == 'upload_reqs' and 'req_file' in request.files:
             file = request.files['req_file']
             if file and file.filename == 'requirements.txt':
@@ -80,26 +81,21 @@ def dashboard():
                 flash('requirements.txt uploaded successfully!', 'success')
             else:
                 flash('Invalid file. Please upload a file named requirements.txt.', 'danger')
-        
         elif action == 'upload_db' and 'db_file' in request.files:
             file = request.files['db_file']
             if file and file.filename.endswith('.db'):
-                # We save it with a consistent name for simplicity
                 file.save(os.path.join(user_folder, 'user.db'))
                 flash('Database file uploaded successfully!', 'success')
             else:
                 flash('Invalid file. Please upload a .db file.', 'danger')
-        
         return redirect(url_for('main.dashboard'))
 
-    # Prepare data for GET request
     bot = current_user.bot
     files = {
         'bot_py': os.path.exists(os.path.join(user_folder, 'bot.py')),
         'req_txt': os.path.exists(os.path.join(user_folder, 'requirements.txt')),
         'db_file': os.path.exists(os.path.join(user_folder, 'user.db'))
     }
-    
     log_content = "No log file found."
     log_file_path = os.path.join(user_folder, 'bot.log')
     if os.path.exists(log_file_path):
@@ -108,7 +104,6 @@ def dashboard():
                 log_content = f.read()
         except Exception as e:
             log_content = f"Error reading log file: {e}"
-
     return render_template('dashboard.html', title='Dashboard', bot=bot, files=files, log_content=log_content)
 
 @main.route("/bot/start")
@@ -133,8 +128,6 @@ def stop_bot():
 @login_required
 def admin_panel():
     if not current_user.is_admin:
-        abort(403) # Forbidden
-    
-    # Join User and Bot tables to get all info in one query
+        abort(403)
     users_with_bots = db.session.query(User, Bot).join(Bot, User.id == Bot.user_id).all()
     return render_template('admin.html', title='Admin Panel', users_with_bots=users_with_bots)
